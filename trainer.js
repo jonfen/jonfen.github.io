@@ -243,9 +243,29 @@ let CwTrainer = (function () {
                 }
             }
 
-            return words.join(" ");
+            return words;
         }
         
+        shuffle(a) {
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        randomCWOps(session, mode) {
+            var words = [];
+            if (mode === 'random_repeat') {
+                // TODO
+            } else if (mode === 'random_no_repeat') {
+                words = this.shuffle(CWOPS_LISTS[Number(session)-1].Copying);
+            } else {
+                words = CWOPS_LISTS[Number(session)-1].Copying;
+            }
+            return words;
+        }
+
         randomGroups(numGroups, groupSize) {
             var groups = [];
             var alphabet = [];
@@ -277,7 +297,7 @@ let CwTrainer = (function () {
                 groups.push(group);
             }
 
-            return groups.join(" ");
+            return groups;
         }
 
         sendMorseString(str) {
@@ -303,7 +323,7 @@ let CwTrainer = (function () {
         }
         
         sendChar(c) {
-            var morseValue = CHARS[c];
+            var morseValue = CHARS[c.toUpperCase()];
 
             if (beforeCharCallback) {
                 pendingTimeouts.push(setTimeout(function() {
@@ -354,7 +374,7 @@ let CwTrainer = (function () {
             }
             
             for (var i = 0; i < word.length; i++) {
-                this.sendChar(word[i].toUpperCase());
+                this.sendChar(word[i]);
                 if (i < word.length - 1) {
                     time = time + charSpace;
                 }

@@ -5,6 +5,7 @@
     <title>Visual Farnsworth CW Trainer</title>
     <link rel="stylesheet" href="style.css">
     <script language="javascript" src="trainer.js"></script>
+    <script language="javascript" src="session2.js"></script>
   </head>
   <body id="home">
     <a name="top"></a>
@@ -43,20 +44,39 @@
           </select>
         </div>
         <div class="container">
-          <h3>Display</h3>
-          <select class="select" id="displaySelect">
-            <option value="immediate">Immediate</option>
-            <option value="lingering">Lingering</option>
-            <option value="delayed">Delayed</option>
+          <h3>Mode</h3>
+          <select class="select" id="modeSelect">
+            <option value="straight">Straight</option>
+            <option value="random_repeat">Random &amp; Repeat</option>
+            <option value="random_no_repeat">Random &amp; No Repeat</option>
           </select>
         </div>
         <div class="container">
           <h3>Type</h3>
           <select class="select" id="typeSelect">
+            <option value="cwops">CWOps Level 1</option>
             <option value="words">Top CW Words</option>
             <option value="random">Random Groups</option>
           </select>
         </div>
+        <div class="container">
+          <h3>CWOps Session</h3>
+          <select class="select" id="sessionSelect">
+            <option value="1">Session 1: t, e, a, n</option>
+            <option value="2">Session 2: i, o, s, 1, 4</option>
+            <option value="3">Session 3: d, h, l, r, 2, 5</option>
+            <option value="4">Session 4: c, u</option>
+            <option value="5">Session 5: m, w, 3, 6, ?</option>
+            <option value="6">Session 6: f, y</option>
+            <option value="7">Session 7: g, p, 7, 9, /</option>
+            <option value="8">Session 8: b, v</option>
+            <option value="9">Session 9: j, k, 0, 8, &lt;BT&gt;</option>
+            <option value="10">Session 10: q, x, z, &lt;BK&gt;</option>
+            <option value="11">Session 11: -</option>
+            <option value="12">Session 12</option>
+            <option value="13">Session 13: &lt;SK&gt;</option>
+          </select>
+        </div>        
         <div class="container cgroup" id="selectedType"></div>
       </div>
       <div>
@@ -170,7 +190,7 @@
 
     <script language="javascript">
       const DEFAULT_WPM = 20;
-      const DEFAULT_FARNSWORTH = 5;
+      const DEFAULT_FARNSWORTH = 15;
       const DEFAULT_GROUP_COUNT = 50;
       const DEFAULT_GROUP_LEN = 5;
 
@@ -200,6 +220,7 @@
 </div>
 `;      
       var text;
+      var text_list;
 
       var charNum = 0;
 
@@ -215,12 +236,14 @@
           $("textButton").disabled = true;
           $("sendButton").disabled = true;
           $("cancelButton").disabled = false;
+          $("modeSelect").disabled = true;
+          $("sessionSelect").disabled = true;
           $("sendText").disabled = true;
           $("typeSelect").disabled = true;
           if (type === 'words') {
               $("callsignsCheckbox").disabled = true;
               $("prosignsCheckbox").disabled = true;
-          } else {
+          } else if (type === 'random') {
               $("lettersCheckbox").disabled = true;
               $("numbersCheckbox").disabled = true;
               $("symbolsCheckbox").disabled = true;
@@ -236,12 +259,14 @@
           $("textButton").disabled = false;
           $("sendButton").disabled = false;
           $("cancelButton").disabled = true;
+          $("modeSelect").disabled = false;
+          $("sessionSelect").disabled = false;          
           $("sendText").disabled = false;
           $("typeSelect").disabled = false;
           if (type === 'words') {
               $("callsignsCheckbox").disabled = false;
               $("prosignsCheckbox").disabled = false;
-          } else {
+          } else if (type === 'random') {
               $("lettersCheckbox").disabled = false;
               $("numbersCheckbox").disabled = false;
               $("symbolsCheckbox").disabled = false;
@@ -250,6 +275,7 @@
 
       function updateConfig() {
           const type = $("typeSelect").value;
+          $("textButton").value = 'New Text';
           if (type === 'words') {
               $("selectedType").innerHTML = wordsBlock;
 
@@ -264,6 +290,9 @@
                   trainer.enableProsigns = $("prosignsCheckbox").checked;
                   updateConfig();
               };
+          } else if (type === 'cwops') {
+            $("textButton").value = 'Shuffle';
+            $("selectedType").innerHTML = '';
           } else {
               $("selectedType").innerHTML = groupsBlock;
 
@@ -292,13 +321,8 @@
           var newText = text.replace(/@/g, '');
 
           charNum += c.length;
-
-          if ($("displaySelect").value === "delayed") {
-              $("output").innerHTML = "";
-          } else {
-              $("output").innerHTML = c;
-          }
-
+          $("output").innerHTML = "";
+        
           newText = 
               "<span class=\"hilighted\">" + newText.substring(0, charNum) + "</span>" +
               newText.substring(charNum, newText.length);
@@ -311,11 +335,7 @@
       }
 
       function hideChar(c) {
-          if ($("displaySelect").value === "delayed") {
-              $("output").innerHTML = c;
-          } else if ($("displaySelect").value === "immediate") {
-              $("output").innerHTML = "";
-          }
+          $("output").innerHTML = c;
       }
 
       $("wpmSelect").value = DEFAULT_WPM;
@@ -336,9 +356,14 @@
           charNum = 0;
 
           if ($("typeSelect").value === 'words') {
-              text = trainer.randomText(75);
+              text_list = trainer.randomText(75);
+              text = text_list.join(" ");
+          } else if ($("typeSelect").value === 'cwops') {
+              text_list = trainer.randomCWOps($("sessionSelect").value, $("modeSelect").value);
+              text = text_list.join(" ");
           } else {
-              text = trainer.randomGroups(60, 5);
+              text_list = trainer.randomGroups(60, 5);
+              text = text_list.join(" ");
           }
           
           $("sendText").innerHTML =
@@ -362,6 +387,8 @@
       $("wpmSelect").onchange = setWpm;
       $("fwSelect").onchange = setWpm;
       $("typeSelect").onchange = updateConfig;
+      $("modeSelect").onchange = generateText;
+      $("sessionSelect").onchange = generateText;
 
       $("textButton").onclick = generateText;
       $("sendButton").onclick = send;
